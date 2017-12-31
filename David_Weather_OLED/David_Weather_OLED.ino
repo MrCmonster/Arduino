@@ -189,7 +189,7 @@ void setup() {
   Serial.println("Finished setup()");
 }
 
-int counter = 0;
+int counter = 10; // Start at 10 so that the first pass pulls data from the sensors instead of using the initial values from the code.
 
 void loop() {
   // Only needed in forced mode! In normal mode, you can remove the next line.
@@ -198,12 +198,12 @@ void loop() {
   // picture loop for OLED
   u8g.firstPage();
   do {
-    if (counter == 10)
+    if (counter == 10) // Only pull data on every 10th pass
     {
       getValues();
       counter = 0;
     }
-    printValues();
+    printValues(); // Update the screen every time
     delay(delayTime);
   } while ( u8g.nextPage() );
 
