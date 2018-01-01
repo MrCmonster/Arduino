@@ -90,38 +90,47 @@ float currentHumidity = 0;
 float currentPressure = 0;
 
 void setup() {
-  Serial.begin(9600);
-  Serial.println(F("BME280 test"));
+  Serial.begin(115200);
+  Serial.println(F("BME280 initilization"));
 
   if (! bme.begin()) {
     Serial.println("Could not find a valid BME280 sensor, check wiring!");
-    while (1);
+    pinMode(LED_BUILTIN, OUTPUT);
+    while (1)
+    {
+      // Blink the LED to indicate an error
+      digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
+      delay(1000);                       // wait for a second
+      digitalWrite(LED_BUILTIN, LOW);    // turn the LED off by making the voltage LOW
+      delay(1000);                       // wait for a second
+    }
   }
 
-/*/
-  Serial.println("-- Default Test --");
-  Serial.println("normal mode, 16x oversampling for all, filter off,");
-  Serial.println("0.5ms standby period");
-  delayTime = 10;
-//*/
+  /*/
+    Serial.println("-- Default Test --");
+    Serial.println("normal mode, 16x oversampling for all, filter off,");
+    Serial.println("0.5ms standby period");
+    delayTime = 10;
+    //*/
 
   // For more details on the following scenarious, see chapter
   // 3.5 "Recommended modes of operation" in the datasheet
 
   //*
-      // weather monitoring
-      Serial.println("-- Weather Station Scenario --");
-      Serial.println("forced mode, 1x temperature / 1x humidity / 1x pressure oversampling,");
-      Serial.println("filter off");
-      bme.setSampling(Adafruit_BME280::MODE_FORCED,
-                      Adafruit_BME280::SAMPLING_X1, // temperature
-                      Adafruit_BME280::SAMPLING_X1, // pressure
-                      Adafruit_BME280::SAMPLING_X1, // humidity
-                      Adafruit_BME280::FILTER_OFF,
-                      Adafruit_BME280::STANDBY_MS_10);
+  // weather monitoring
+  Serial.println("-- Weather Station Scenario --");
+  Serial.println("forced mode, 1x temperature / 1x humidity / 1x pressure oversampling,");
+  Serial.println("filter off");
+  bme.setSampling(Adafruit_BME280::MODE_FORCED,
+                  Adafruit_BME280::SAMPLING_X1, // temperature
+                  Adafruit_BME280::SAMPLING_X1, // pressure
+                  Adafruit_BME280::SAMPLING_X1, // humidity
+                  Adafruit_BME280::FILTER_OFF,
+                  Adafruit_BME280::STANDBY_MS_10);
 
-      // suggested rate is 1/60Hz (1m)
-      delayTime = 10; // in milliseconds
+  // suggested rate is 1/60Hz (1m)
+  // delayTime = 60000;  // in milliseconds
+  delayTime = 10; // in milliseconds
   //*/
 
   /*
@@ -203,30 +212,30 @@ void loop() {
       getValues();
       counter = 0;
     }
-    printValues(); // Update the screen every time
+    printValues(); // Update the screen every time for better refresh rate
     delay(delayTime);
   } while ( u8g.nextPage() );
 
-counter++;
+  counter++;
 }
 
 
 void printValues() {
   // graphic commands to redraw the complete screen should be placed here
 
-//  u8g.setFont(u8g_font_unifont);
+  //  u8g.setFont(u8g_font_unifont);
   u8g.setPrintPos(0, fontLineSpacing);
   // call procedure from base class, http://arduino.cc/en/Serial/Print
   u8g.print("Temp:");
   u8g.print(currentTemp, 1);
   u8g.print("\260F"); // '\260' is the ASCII degree symbol
 
-  u8g.setPrintPos(0, fontLineSpacing*2);
+  u8g.setPrintPos(0, fontLineSpacing * 2);
   u8g.print("Press:");
   u8g.print(currentPressure / 100.0F, 1);
   u8g.print(" hPa");
 
-  u8g.setPrintPos(0, fontLineSpacing*3);
+  u8g.setPrintPos(0, fontLineSpacing * 3);
   u8g.print("Hum:");
   u8g.print(currentHumidity, 1);
   u8g.print("%");
@@ -234,7 +243,7 @@ void printValues() {
 }
 
 void getValues() {
-  currentTemp = bme.readTemperature() * 9/5 + 32;
+  currentTemp = bme.readTemperature() * 9 / 5 + 32;
   currentPressure = bme.readPressure();
   currentHumidity = bme.readHumidity();
 }
