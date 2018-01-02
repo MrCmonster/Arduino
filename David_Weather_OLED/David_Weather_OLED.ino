@@ -72,8 +72,10 @@ U8GLIB_SH1106_128X64 u8g(U8G_I2C_OPT_NONE); // I2C / TWI
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BME280.h>
 
-#define DEBUG 1
+#define DEBUG 1 // Comment this line out to disable the debug statements
 
+//***************************************************************************
+// Start of stuff for the BME280
 //#define BME_SCK 13
 //#define BME_MISO 12
 //#define BME_MOSI 11
@@ -88,8 +90,12 @@ int fontLineSpacing = 0; //default to 0, read later
 float currentTemp = 0;
 float currentHumidity = 0;
 float currentPressure = 0;
+// End of stuff for the BME280
+//***************************************************************************
 
-// Stuff for the forecast
+
+//***************************************************************************
+// Start of stuff for the forecast
 float lastPressure = -1;
 float lastTemp = -1;
 int lastForecast = -1;
@@ -98,7 +104,7 @@ const int LAST_SAMPLES_COUNT = 5;
 float lastPressureSamples[LAST_SAMPLES_COUNT];
 
 // this CONVERSION_FACTOR is used to convert from Pa to kPa in forecast algorithm
-// get kPa/h be dividing hPa by 10 
+// get kPa/h by dividing hPa by 10
 #define CONVERSION_FACTOR (1.0/10.0)
 
 int minuteCount = 0;
@@ -110,10 +116,13 @@ float pressureAvg2;
 
 float dP_dt;
 
-// Sleep time between reads (in seconds). Do not change this value as the forecast algorithm needs a sample every minute.
-const unsigned long SLEEP_TIME = 60000; 
+// Sleep time between reads (in seconds). Do not change this value as the
+// forecast algorithm needs a sample every minute.
+const unsigned long SLEEP_TIME = 60000;
 
-const char *weather[] = { "Stable", "Sunny", "Cloudy", "Unstable", "Thunderstorm", "Unknown-Learning" };
+const char *weather[] = { "Stable", "Sunny", "Cloudy", "Unstable",
+"Thunderstorm", "Unknown-Learning" };
+
 enum FORECAST
 {
   STABLE = 0,     // "Stable Weather Pattern"
@@ -124,7 +133,8 @@ enum FORECAST
   UNKNOWN = 5     // "Unknown (More Time needed)
 };
 int forecast = 5;
-
+// End of stuff for the forecast
+//**************************************************************************
 
 void setup() {
   Serial.begin(115200);
@@ -229,14 +239,16 @@ void setup() {
 
 
   u8g.setFont(u8g_font_unifont);
-  fontLineSpacing = u8g.getFontLineSpacing() + 1; // Add 1 to take the º symbol into account, it's one pixel higher than regular charaters
+  fontLineSpacing = u8g.getFontLineSpacing() + 1; // Add 1 pixel to take the º
+  //symbol into account, it's one pixel higher than regular charaters
 
   Serial.print("fontLineSpacing = ");
   Serial.println(fontLineSpacing, DEC);
   Serial.println("Finished setup()");
 }
 
-int counter = 10; // Start at 10 so that the first pass pulls data from the sensors instead of using the initial values from the code.
+int counter = 10; // Start at 10 so that the first pass pulls data from
+// the sensors instead ofusing the initial values from the code.
 
 
 void loop() {
@@ -250,7 +262,7 @@ void loop() {
     {
       getValues();
     }
-    if (counter == 231) // Works out to be once a minute.
+    if (counter == 235) // Works out to be roughly once a minute. Must be a better way to figure this out other than trial and error.
     {
       counter = 0;
       forecast = sample(currentPressure);
@@ -267,30 +279,29 @@ void printValues() {
   // graphic commands to redraw the complete screen should be placed here
 
   //  u8g.setFont(u8g_font_unifont);
-  u8g.setPrintPos(0, fontLineSpacing);
+  u8g.setPrintPos(0, fontLineSpacing); // Line 1
   // call procedure from base class, http://arduino.cc/en/Serial/Print
   u8g.print("Temp:  ");
   u8g.print(currentTemp, 1);
   u8g.print("\260F"); // '\260' is the ASCII degree symbol
 
-  u8g.setPrintPos(0, fontLineSpacing * 2);
+  u8g.setPrintPos(0, fontLineSpacing * 2); // Line 2
   u8g.print("Press: ");
   u8g.print(currentPressure, 1);
   u8g.print(" hPa");
 
-  u8g.setPrintPos(0, fontLineSpacing * 3);
+  u8g.setPrintPos(0, fontLineSpacing * 3); // Line 3
   u8g.print("Hum:   ");
   u8g.print(currentHumidity, 1);
   u8g.print("%");
 
-  u8g.setPrintPos(0, fontLineSpacing * 4);
+  u8g.setPrintPos(0, fontLineSpacing * 4); // Line 4
   u8g.print(weather[forecast]);
-
 }
 
 void getValues() {
   currentTemp = bme.readTemperature() * 9.0 / 5.0 + 32; // Convert C to F
-  currentPressure = bme.readPressure() / 100.0F; // Convert to hPa
+  currentPressure = bme.readPressure() / 100.0F; // Convert to hPa == milliBar
   currentHumidity = bme.readHumidity();
 }
 
@@ -426,15 +437,12 @@ int sample(float pressure)
   }
 
 #ifdef DEBUG
-  // uncomment when debugging
-//*/
   Serial.print(F("Forecast at minute "));
   Serial.print(minuteCount);
   Serial.print(F(" dP/dt = "));
   Serial.print(dP_dt);
   Serial.print(F("kPa/h --> "));
   Serial.println(weather[forecast]);
-//*/
 #endif
 
   return forecast;
@@ -451,4 +459,3 @@ float getLastPressureSamplesAverage()
 
   return lastPressureSamplesAverage;
 }
-
