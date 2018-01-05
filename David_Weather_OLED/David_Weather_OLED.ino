@@ -252,26 +252,61 @@ int counter = 10; // Start at 10 so that the first pass pulls data from
 
 
 void loop() {
-  // Only needed in forced mode! In normal mode, you can remove the next line.
-  bme.takeForcedMeasurement(); // has no effect in normal mode
+  // Setup the timers
+  static VirtualDelay screenRedrawDelay, measurementDelay, forecastDelay;
+  DO_ONCE
+  ( Serial.println("DO_ONCE 1");
+    screenRedrawDelay.start(screenRedraw_ms); // start one-shot screenRedrawDelay
+    measurementDelay.start(measurement_ms); // start one-shot measurementDelay
+    forecastDelay.start(forecast_ms); // start one-shot forecastDelay
+    #ifdef DEBUG
+      Serial.print("millis=");
+      Serial.println(millis());
+    #endif
+  )
 
-  // picture loop for OLED
-  u8g.firstPage();
-  do {
-    if (counter % 10 == 0) // Only pull data on every 10th pass
-    {
-      getValues();
-    }
-    if (counter == 235) // Works out to be roughly once a minute. Must be a better way to figure this out other than trial and error.
-    {
-      counter = 0;
+  // if it's time to run the forecast
+  if(forecastDelay.elapsed())
+    { // update the forecast
+      // Reset the timer at the beginnin of the function so we don't add in the
+      // time it takes to run the function.
+      forecastDelay.start(forecast_ms);
+      #ifdef DEBUG
+        Serial.print("forecast millis=");
+        Serial.println(millis());
+      #endif
       forecast = sample(currentPressure);
-    }
-    printValues(); // Update the screen every time for better refresh rate
-    delay(delayTime);
-  } while ( u8g.nextPage() );
+      // restart the timer
+    };
 
-  counter++;
+  // if it's time to update the sensor readings
+  if(measurementDelay.elapsed())
+    { // read the sensors
+      // Reset the timer at the beginnin of the function so we don't add in the
+      // time it takes to run the function.
+      measurementDelay.start(measurement_ms);
+      #ifdef DEBUG
+        Serial.print("measurement millis=");
+        Serial.println(millis());
+      #endif
+      // Only needed in forced mode! In normal mode, you can remove the next line.
+      bme.takeForcedMeasurement(); // has no effect in normal mode
+      getValues();
+      // restart the timer
+    };
+
+  // if it's time to redraw the screen
+  if(screenRedrawDelay.elapsed())
+    { // redraw the screen frequently so it looks smooth when changing values.
+      // Reset the timer at the beginnin of the function so we don't add in the
+      // time it takes to run the function.
+      screenRedrawDelay.start(screenRedraw_ms);
+      u8g.firstPage();
+      do {
+        printValues(); // Update the screen every time for better refresh rate
+      } while ( u8g.nextPage() );
+      // restart the timer
+    };
 }
 
 
