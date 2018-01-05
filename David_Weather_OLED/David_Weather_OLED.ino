@@ -71,6 +71,8 @@ U8GLIB_SH1106_128X64 u8g(U8G_I2C_OPT_NONE); // I2C / TWI
 #include <SPI.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BME280.h>
+#include <avdweb_VirtualDelay.h> // non blocking timer
+
 
 #define DEBUG 1 // Comment this line out to disable the debug statements
 
