@@ -120,8 +120,13 @@ float dP_dt;
 
 // Sleep time between reads (in seconds). Do not change this value as the
 // forecast algorithm needs a sample every minute.
-const unsigned long SLEEP_TIME = 60000;
+//const unsigned long SLEEP_TIME = 60000;
 
+static unsigned long screenRedraw_ms = 11; // use primes so they don't overlap
+static unsigned long measurement_ms = 997; // use primes so they don't overlap
+static unsigned long forecast_ms = 60000; // needs to be at 60 sec for the
+                                          // forecast algorithm
+                                          
 const char *weather[] = { "Stable", "Sunny", "Cloudy", "Unstable",
 "Thunderstorm", "Unknown-Learning" };
 
@@ -140,6 +145,7 @@ int forecast = 5;
 
 void setup() {
   Serial.begin(115200);
+  Serial.println();
   Serial.println(F("BME280 initilization"));
 
   if (! bme.begin()) {
@@ -167,7 +173,7 @@ void setup() {
 
   //*
   // weather monitoring
-  Serial.println("-- Weather Station Scenario --");
+  Serial.println("bme.setSampling -- Weather Station Scenario --");
   Serial.println("forced mode, 1x temperature / 1x humidity / 1x pressure oversampling");
   Serial.println("filter off");
   Serial.println("standby = 10ms");
@@ -180,65 +186,8 @@ void setup() {
 
   // suggested rate is 1/60Hz (1m)
   // delayTime = 60000;  // in milliseconds
-  delayTime = 10; // in milliseconds
+  //delayTime = 10; // in milliseconds
   //*/
-
-  /*
-      // humidity sensing
-      Serial.println("-- Humidity Sensing Scenario --");
-      Serial.println("forced mode, 1x temperature / 1x humidity / 0x pressure oversampling");
-      Serial.println("= pressure off, filter off");
-      bme.setSampling(Adafruit_BME280::MODE_FORCED,
-                      Adafruit_BME280::SAMPLING_X1,   // temperature
-                      Adafruit_BME280::SAMPLING_NONE, // pressure
-                      Adafruit_BME280::SAMPLING_X1,   // humidity
-                      Adafruit_BME280::FILTER_OFF );
-
-      // suggested rate is 1Hz (1s)
-      delayTime = 1000;  // in milliseconds
-  */
-
-  /*
-      // indoor navigation
-      Serial.println("-- Indoor Navigation Scenario --");
-      Serial.println("normal mode, 16x pressure / 2x temperature / 1x humidity oversampling,");
-      Serial.println("0.5ms standby period, filter 16x");
-      bme.setSampling(Adafruit_BME280::MODE_NORMAL,
-                      Adafruit_BME280::SAMPLING_X2,  // temperature
-                      Adafruit_BME280::SAMPLING_X16, // pressure
-                      Adafruit_BME280::SAMPLING_X1,  // humidity
-                      Adafruit_BME280::FILTER_X16,
-                      Adafruit_BME280::STANDBY_MS_0_5 );
-
-      // suggested rate is 25Hz
-      // 1 + (2 * T_ovs) + (2 * P_ovs + 0.5) + (2 * H_ovs + 0.5)
-      // T_ovs = 2
-      // P_ovs = 16
-      // H_ovs = 1
-      // = 40ms (25Hz)
-      // with standby time that should really be 24.16913... Hz
-      delayTime = 41;
-
-      /*
-      // gaming
-      Serial.println("-- Gaming Scenario --");
-      Serial.println("normal mode, 4x pressure / 1x temperature / 0x humidity oversampling,");
-      Serial.println("= humidity off, 0.5ms standby period, filter 16x");
-      bme.setSampling(Adafruit_BME280::MODE_NORMAL,
-                      Adafruit_BME280::SAMPLING_X1,   // temperature
-                      Adafruit_BME280::SAMPLING_X4,   // pressure
-                      Adafruit_BME280::SAMPLING_NONE, // humidity
-                      Adafruit_BME280::FILTER_X16,
-                      Adafruit_BME280::STANDBY_MS_0_5 );
-
-      // Suggested rate is 83Hz
-      // 1 + (2 * T_ovs) + (2 * P_ovs + 0.5)
-      // T_ovs = 1
-      // P_ovs = 4
-      // = 11.5ms + 0.5ms standby
-      delayTime = 12;
-  */
-
 
   u8g.setFont(u8g_font_unifont);
   fontLineSpacing = u8g.getFontLineSpacing() + 1; // Add 1 pixel to take the º
@@ -257,12 +206,12 @@ void loop() {
   // Setup the timers
   static VirtualDelay screenRedrawDelay, measurementDelay, forecastDelay;
   DO_ONCE
-  ( Serial.println("DO_ONCE 1");
+  ( 
     screenRedrawDelay.start(screenRedraw_ms); // start one-shot screenRedrawDelay
     measurementDelay.start(measurement_ms); // start one-shot measurementDelay
     forecastDelay.start(forecast_ms); // start one-shot forecastDelay
     #ifdef DEBUG
-      Serial.print("millis=");
+      Serial.print("Starting loop() at millis=");
       Serial.println(millis());
     #endif
   )
