@@ -74,7 +74,11 @@ U8GLIB_SH1106_128X64 u8g(U8G_I2C_OPT_NONE); // I2C / TWI
 #include <avdweb_VirtualDelay.h> // non blocking timer
 
 
-#define DEBUG 1 // Comment this line out to disable the debug statements
+//***************************************************************************
+// DEBUG Settings
+#define DEBUG 1 // 0-3 Higher number == more debug, 0 == none
+//***************************************************************************
+
 
 //***************************************************************************
 // Start of stuff for the BME280
@@ -126,7 +130,7 @@ static unsigned long screenRedraw_ms = 11; // use primes so they don't overlap
 static unsigned long measurement_ms = 997; // use primes so they don't overlap
 static unsigned long forecast_ms = 60000; // needs to be at 60 sec for the
                                           // forecast algorithm
-                                          
+
 const char *weather[] = { "Stable", "Sunny", "Cloudy", "Unstable",
 "Thunderstorm", "Unknown-Learning" };
 
@@ -145,8 +149,10 @@ int forecast = 5;
 
 void setup() {
   Serial.begin(115200);
+  #ifdef DEBUG2
   Serial.println();
   Serial.println(F("BME280 initilization"));
+  #endif
 
   if (! bme.begin()) {
     Serial.println("Could not find a valid BME280 sensor, check wiring!");
@@ -173,10 +179,12 @@ void setup() {
 
   //*
   // weather monitoring
+  #if DEBUG >= 2
   Serial.println("bme.setSampling -- Weather Station Scenario --");
   Serial.println("forced mode, 1x temperature / 1x humidity / 1x pressure oversampling");
   Serial.println("filter off");
   Serial.println("standby = 10ms");
+  #endif
   bme.setSampling(Adafruit_BME280::MODE_FORCED,
                   Adafruit_BME280::SAMPLING_X1, // temperature
                   Adafruit_BME280::SAMPLING_X1, // pressure
@@ -193,9 +201,11 @@ void setup() {
   fontLineSpacing = u8g.getFontLineSpacing() + 1; // Add 1 pixel to take the º
   //symbol into account, it's one pixel higher than regular charaters
 
+  #if DEBUG >= 2
   Serial.print("fontLineSpacing = ");
   Serial.println(fontLineSpacing, DEC);
   Serial.println("Finished setup()");
+  #endif
 }
 
 int counter = 10; // Start at 10 so that the first pass pulls data from
@@ -206,11 +216,11 @@ void loop() {
   // Setup the timers
   static VirtualDelay screenRedrawDelay, measurementDelay, forecastDelay;
   DO_ONCE
-  ( 
+  (
     screenRedrawDelay.start(screenRedraw_ms); // start one-shot screenRedrawDelay
     measurementDelay.start(measurement_ms); // start one-shot measurementDelay
     forecastDelay.start(forecast_ms); // start one-shot forecastDelay
-    #ifdef DEBUG
+    #if DEBUG >= 3
       Serial.print("Starting loop() at millis=");
       Serial.println(millis());
     #endif
@@ -222,7 +232,7 @@ void loop() {
       // Reset the timer at the beginnin of the function so we don't add in the
       // time it takes to run the function.
       forecastDelay.start(forecast_ms);
-      #ifdef DEBUG
+      #if DEBUG >= 1
         Serial.print("forecast millis=");
         Serial.println(millis());
       #endif
@@ -236,7 +246,7 @@ void loop() {
       // Reset the timer at the beginnin of the function so we don't add in the
       // time it takes to run the function.
       measurementDelay.start(measurement_ms);
-      #ifdef DEBUG
+      #if DEBUG >= 3
         Serial.print("measurement millis=");
         Serial.println(millis());
       #endif
@@ -422,7 +432,7 @@ int sample(float pressure)
     forecast = UNKNOWN;
   }
 
-#ifdef DEBUG
+#if DEBUG >= 1
   Serial.print(F("Forecast at minute "));
   Serial.print(minuteCount);
   Serial.print(F(" dP/dt = "));
