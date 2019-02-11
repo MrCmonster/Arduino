@@ -76,7 +76,7 @@ U8GLIB_SH1106_128X64 u8g(U8G_I2C_OPT_NONE); // I2C / TWI
 
 //***************************************************************************
 // DEBUG Settings
-#define DEBUG 1 // 0-3 Higher number == more debug, 0 == none
+#define DEBUG 0 // 0-3 Higher number == more debug, 0 == none
 //***************************************************************************
 
 
@@ -115,24 +115,26 @@ float lastPressureSamples[LAST_SAMPLES_COUNT];
 
 int minuteCount = 0;
 bool firstRound = true;
+
 // average value is used in forecast algorithm.
 float pressureAvg;
 // average after 2 hours is used as reference value for the next iteration.
 float pressureAvg2;
 
-float dP_dt;
+float dP_dt; // Change in pressure over time (delta P / delta t)
 
 // Sleep time between reads (in seconds). Do not change this value as the
 // forecast algorithm needs a sample every minute.
 //const unsigned long SLEEP_TIME = 60000;
 
-static unsigned long screenRedraw_ms = 11; // use primes so they don't overlap
-static unsigned long measurement_ms = 997; // use primes so they don't overlap
+static unsigned long screenRedraw_ms = 101; // use primes so they don't overlap #WAS 11
+static unsigned long measurement_ms = 4999; // use primes so they don't overlap #WAS 997
 static unsigned long forecast_ms = 60000; // needs to be at 60 sec for the
                                           // forecast algorithm
 
-const char *weather[] = { "Stable", "Sunny", "Cloudy", "Unstable",
-"Thunderstorm", "Unknown-Learning" };
+// Text to print on screen for the forecast
+const char *weather[] = { "Stable", "Clear", "Cloudy or Rain", "Unstable",
+"Thunderstorms", "Unknown-Learning" };
 
 enum FORECAST
 {
@@ -143,13 +145,13 @@ enum FORECAST
   THUNDERSTORM = 4, // "Quickly falling L-Press",    "Thunderstorm"
   UNKNOWN = 5     // "Unknown (More Time needed)
 };
-int forecast = 5;
+int forecast = UNKNOWN; // Start at Unknown
 // End of stuff for the forecast
 //**************************************************************************
 
 void setup() {
   Serial.begin(115200);
-  #ifdef DEBUG2
+  #if DEBUG >= 2
   Serial.println();
   Serial.println(F("BME280 initilization"));
   #endif
@@ -161,9 +163,9 @@ void setup() {
     {
       // Blink the LED to indicate an error
       digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
-      delay(1000);                       // wait for a second
+      delay(500);                        // wait for .5 second
       digitalWrite(LED_BUILTIN, LOW);    // turn the LED off by making the voltage LOW
-      delay(1000);                       // wait for a second
+      delay(500);                        // wait for .5 second
     }
   }
 
@@ -174,7 +176,7 @@ void setup() {
     delayTime = 10;
     //*/
 
-  // For more details on the following scenarious, see chapter
+  // For more details on the following scenarios, see chapter
   // 3.5 "Recommended modes of operation" in the datasheet
 
   //*
@@ -209,7 +211,7 @@ void setup() {
 }
 
 int counter = 10; // Start at 10 so that the first pass pulls data from
-// the sensors instead ofusing the initial values from the code.
+// the sensors instead of using the initial values from the code.
 
 
 void loop() {
@@ -243,8 +245,9 @@ void loop() {
   // if it's time to update the sensor readings
   if(measurementDelay.elapsed())
     { // read the sensors
-      // Reset the timer at the beginnin of the function so we don't add in the
+      // Reset the timer at the beginning of the function so we don't add in the
       // time it takes to run the function.
+// ** NOTE Should this be after not before?
       measurementDelay.start(measurement_ms);
       #if DEBUG >= 3
         Serial.print("measurement millis=");
@@ -259,7 +262,7 @@ void loop() {
   // if it's time to redraw the screen
   if(screenRedrawDelay.elapsed())
     { // redraw the screen frequently so it looks smooth when changing values.
-      // Reset the timer at the beginnin of the function so we don't add in the
+      // Reset the timer at the beginning of the function so we don't add in the
       // time it takes to run the function.
       screenRedrawDelay.start(screenRedraw_ms);
       u8g.firstPage();
@@ -277,26 +280,26 @@ void printValues() {
   //  u8g.setFont(u8g_font_unifont);
   u8g.setPrintPos(0, fontLineSpacing); // Line 1
   // call procedure from base class, http://arduino.cc/en/Serial/Print
-  u8g.print("Temp:  ");
+  u8g.print("Temp: ");
   u8g.print(currentTemp, 1);
   u8g.print("\260F"); // '\260' is the ASCII degree symbol
 
   u8g.setPrintPos(0, fontLineSpacing * 2); // Line 2
-  u8g.print("Press: ");
-  u8g.print(currentPressure, 1);
-  u8g.print(" hPa");
+  u8g.print("Hum:  ");
+  u8g.print(currentHumidity, 0);
+  u8g.print("%");
 
   u8g.setPrintPos(0, fontLineSpacing * 3); // Line 3
-  u8g.print("Hum:   ");
-  u8g.print(currentHumidity, 1);
-  u8g.print("%");
+  u8g.print("Pres: ");
+  u8g.print(currentPressure, 1);
+  u8g.print(" hPa");
 
   u8g.setPrintPos(0, fontLineSpacing * 4); // Line 4
   u8g.print(weather[forecast]);
 }
 
 void getValues() {
-  currentTemp = bme.readTemperature() * 9.0 / 5.0 + 32; // Convert C to F
+  currentTemp = bme.readTemperature() * 9.0 / 5.0 + 32.0; // Convert C to F
   currentPressure = bme.readPressure() / 100.0F; // Convert to hPa == milliBar
   currentHumidity = bme.readHumidity();
 }
